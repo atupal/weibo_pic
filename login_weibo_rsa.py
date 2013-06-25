@@ -1,13 +1,14 @@
 # -*- coding=utf-8 -*-
 
 import unittest
-import requests
+import requests, requests.utils
 import re
 import json
 import urllib
 import base64
 import rsa
 import binascii
+import pickle
 
 class Weibo(object):
     def __init__(self, user = None, pwd = None, debug = False):
@@ -20,10 +21,22 @@ class Weibo(object):
             self.pwd = pwd
         self.session = requests.Session()
         self.debug = debug
-        self._login()
+        if self._read_cookie():
+            self._login()
 
     def __del__(self):
         pass
+
+    def _read_cookie(self):
+        try:
+            with open('./login.cookie', 'rb') as fi:
+                cookie = pickle.load(fi)
+                self.session.cookies.update(cookie)
+                if self.session.get('http://weibo.com').content.find('登录') != -1:
+                    return 1
+                return 0
+        except:
+            return 1
 
     def _pre_login(self):
         '''
@@ -56,6 +69,9 @@ class Weibo(object):
             新浪微博登录加密密码的算法已经改成rsa的了
         '''
         rsa_publickey = int(self.server_data.get('pubkey'), 16)
+        '''
+           0x10001 是固定值, 化成10进制后为65537
+        '''
         key = rsa.PublicKey(rsa_publickey, 65537)
         message = (str(self.server_data.get('servertime')) + '\t' + str(self.server_data.get('nonce')) +
                     '\n' + str(self.pwd))
@@ -111,6 +127,12 @@ class Weibo(object):
 
         #至此已经登录成功,拿着sssion可以做一切事了
 
+        '''
+            保存cookie,下次直接使用cookie
+        '''
+        with open('./login.cookie', 'wb') as fi:
+            cookie = requests.utils.dict_from_cookiejar(self.session.cookies)
+            pickle.dump(cookie, fi)
 
 class _WeiboTestCase(unittest.TestCase):
     def setUp(self):
@@ -126,8 +148,11 @@ class _WeiboTestCase(unittest.TestCase):
         self.client._encrypt_user()
         print self.client.user
 
-    def test_login(self):
+    def _test_login(self):
         self.client._login()
+
+    def test_main(self):
+        pass
 
 if __name__ == "__main__":
     unittest.main()
