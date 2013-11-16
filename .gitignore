@@ -36,3 +36,8 @@ nosetests.xml
 
 #用户名密码
 user
+#login cookie
+cookie
+*.cookie
+cookie.*
+
