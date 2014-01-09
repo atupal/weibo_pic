@@ -1,5 +1,11 @@
 # -*- coding=utf-8 -*-
 
+'''
+    use   : login weibo, and get the session
+    author: atupal
+'''
+
+
 import unittest
 import requests, requests.utils
 import re
